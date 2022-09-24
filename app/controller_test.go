@@ -37,7 +37,7 @@ var testTrash = &Trash{
 	Latitude:     52.520008,
 	Longitude:    13.404954,
 	ImageURL:     "",
-	ReportedBy:   "",
+	ReportedBy:   0,
 	ReportNumber: 0,
 	Reward:       1,
 }
@@ -69,6 +69,7 @@ func TestNewTrash(t *testing.T) {
 		t.Fatalf("Failed to encode the trash: %v", err)
 	}
 	req := httptest.NewRequest(http.MethodPost, "/trash", bytes.NewReader(body))
+	req.Header.Add("user_id", strconv.Itoa(testUser.UserId))
 	s.CreateNewTrash(recorder, req)
 
 	gotStatus := recorder.Result().StatusCode

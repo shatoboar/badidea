@@ -31,7 +31,7 @@ type Trash struct {
 	ImageURL  string    `json:"image_url"`
 
 	// UserId that reported
-	ReportedBy string `json:"reported_by"`
+	ReportedBy int `json:"reported_by"`
 	// Gamification
 	ReportNumber int `json:"report_number"`
 	Reward       int `json:"reward"`

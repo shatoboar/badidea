@@ -9,9 +9,9 @@ type Server struct {
 
 func (s *Server) RegisterRoutes() {
 	s.Router.HandleFunc("/", HelloWorld).Methods("GET")
-	s.Router.HandleFunc("/user", GetUser).Methods("GET")
-	s.Router.HandleFunc("/user", CreateUser).Methods("POST")
-	s.Router.HandleFunc("/trash", ReportTrash).Methods("POST")
-	s.Router.HandleFunc("/trash", ConfirmTrash).Methods("SET")
-	s.Router.HandleFunc("/trash", PickupTrash).Methods("DELETE")
+	s.Router.HandleFunc("/user", s.GetUser).Methods("GET")
+	s.Router.HandleFunc("/user", s.CreateUser).Methods("POST")
+	s.Router.HandleFunc("/trash", s.ReportTrash).Methods("POST")
+	s.Router.HandleFunc("/trash", s.ConfirmTrash).Methods("SET")
+	s.Router.HandleFunc("/trash", s.PickupTrash).Methods("DELETE")
 }

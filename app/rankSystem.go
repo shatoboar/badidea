@@ -1,5 +1,8 @@
 package app
 
+const MaxUint = ^uint(0)
+const MaxInt = int(MaxUint >> 1)
+
 var Ranks [5]string = [...]string{"Rookie Hunter", "Hunter", "Commited Hunter", "Veteran Hunter", "True Trash Hunter"}
 var RankMaxScore = map[string]int{
 	"Rookie Hunter":     100,
@@ -17,17 +20,49 @@ var nextRank = map[string]string{
 	"True Trash Hunter": "True Trash Hunter",
 }
 
-//increments score and update rank if uprank is possible
-func updateRank(user *User, points int) {
-	if user.Rank.Score > RankMaxScore[user.Rank.Title] {
-		user.Rank.Title = nextRank[user.Rank.Title]
+func contains(s []int, id int) bool {
+	for _, v := range s {
+		if v == id {
+			return true
+		}
 	}
 
-	user.Rank.Score += points
-
+	return false
 }
 
-//updates the leaderboard after updating a users score
-func updateLeaderboard() {
+//increments score and update rank if uprank is possible
+func updateRank(user *User, points int) {
+	user.Score += points
+	if user.Score > RankMaxScore[user.Title] {
+		user.Title = nextRank[user.Title]
+	}
+}
 
+func getTopUsers(users map[int]*User, top int) []int {
+	topUsers := make([]int, 0)
+	maxScore, maxScoreKey := 0, 0
+
+	for key, val := range users {
+		if val.Score > maxScore {
+			maxScore = val.Score
+			maxScoreKey = key
+		}
+	}
+	topUsers = append(topUsers, maxScoreKey)
+
+	for i := 0; i < top-1; i++ {
+		prevLargestValue := 0
+		prevLargestKey := 0
+		for key, val := range users {
+			if val.Score >= prevLargestValue && val.Score <= maxScore && !contains(topUsers, key) {
+				prevLargestValue = val.Score
+				prevLargestKey = key
+
+			}
+		}
+		topUsers = append(topUsers, prevLargestKey)
+		maxScore = prevLargestValue
+	}
+
+	return topUsers
 }

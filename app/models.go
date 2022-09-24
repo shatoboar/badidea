@@ -5,7 +5,6 @@ type User struct {
 	UserName      string   `json:"user_name"`
 	PickupHistory []*Trash `json:"pickup_history"`
 	ReportHistory []*Trash `json:"report_history"`
-	Rank          int      `json:"rank"`
 
 	// temporary data
 	JWTToken      string `json:"jwt_token"`
@@ -18,7 +17,8 @@ type User struct {
 	// For pickups:
 	// The bigger the size, more points
 	// The more items, more points
-	Score int `json:"score"`
+	XP   int    `json:"score"`
+	Rank string `json:"rank"`
 }
 
 // We differentiate hotposts and Trashes by close Coordinates

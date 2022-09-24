@@ -27,7 +27,7 @@ func TestCreateUser(t *testing.T) {
 		UserName:      "dannyG",
 		PickupHistory: []*Trash{},
 		ReportHistory: []*Trash{},
-		Rank:          2,
+		Rank:          "rookie",
 		JWTToken:      "",
 		FirebaseToken: "",
 		Score:         1,

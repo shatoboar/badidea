@@ -17,7 +17,9 @@ type User struct {
 	// For pickups:
 	// The bigger the size, more points
 	// The more items, more points
-	Rank Rank `json:"rank"`
+	//Rank Rank `json:"rank"`
+	Rank  int
+	Score int
 }
 
 // We differentiate hotposts and Trashes by close Coordinates

@@ -56,7 +56,7 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
+	newUser.Title = "Rookie Hunter"
 	s.DB.Users[newUser.UserId] = &newUser
 	log.Infof("A new user was added to the DB %v", newUser)
 	w.WriteHeader(http.StatusCreated)

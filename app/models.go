@@ -22,6 +22,7 @@ type User struct {
 	//Rank Rank `json:"rank"`
 	Rank  int
 	Score int
+	Title string
 }
 
 // We differentiate hotposts and Trashes by close Coordinates
@@ -36,9 +37,4 @@ type Trash struct {
 	// Gamification
 	ReportNumber int `json:"report_number"`
 	Reward       int `json:"reward"`
-}
-
-type Rank struct {
-	Score int    `json:"score"`
-	Title string `json:"title"`
 }

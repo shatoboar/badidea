@@ -7,7 +7,7 @@ var Ranks [5]string = [...]string{"Rookie Hunter", "Hunter", "Commited Hunter", 
 var RankMaxScore = map[string]int{
 	"Rookie Hunter":     100,
 	"Hunter":            500,
-	"Commited Hunter":   1500,
+	"Committed Hunter":  1500,
 	"Veteran Hunter":    5000,
 	"True Trash Hunter": 10000,
 }
@@ -15,7 +15,7 @@ var RankMaxScore = map[string]int{
 var nextRank = map[string]string{
 	"Rookie Hunter":     "Hunter",
 	"Hunter":            "Commited Hunter",
-	"Commited Hunter":   "Veteran Hunter",
+	"Committed Hunter":  "Veteran Hunter",
 	"Veteran Hunter":    "True Trash Hunter",
 	"True Trash Hunter": "True Trash Hunter",
 }

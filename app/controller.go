@@ -3,22 +3,24 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
 type DB struct {
-	Users       map[string]*User
-	Trash       map[string]*Trash
-	LeaderBoard map[string]*User
+	Users       map[int]*User
+	Trash       map[uuid.UUID]*Trash
+	LeaderBoard map[uuid.UUID]*User
 }
 
 func NewDB() *DB {
 	return &DB{
-		Users:       make(map[string]*User, 0),
-		Trash:       make(map[string]*Trash, 0),
-		LeaderBoard: make(map[string]*User, 0),
+		Users:       make(map[int]*User, 0),
+		Trash:       make(map[uuid.UUID]*Trash, 0),
+		LeaderBoard: make(map[uuid.UUID]*User, 0),
 	}
 }
 
@@ -26,27 +28,44 @@ func HelloWorld(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello world")
 }
 
+func getDistance(lat1, lon1, lat2, lon2 float64) float64 {
+	R := 6378.137
+	dLat := lat2*math.Pi/180 - lat1*math.Pi/180
+	dLon := lon2*math.Pi/180 - lon1*math.Pi/180
+	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
+		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*
+			math.Sin(dLon/2)*math.Sin(dLon/2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	d := R * c
+
+	return d * 1000
+}
+
+// Lookup firebase token to check whether this is valid
 func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var newUser User
 	err := json.NewDecoder(r.Body).Decode(&newUser)
 	if err != nil {
-		log.Fatalf("Couldn't decode User: %v", err)
+		log.Errorf("Couldn't decode User: %v", err)
 	}
 
 	_, ok := s.DB.Users[newUser.UserId]
-	if !ok {
-		s.DB.Users[newUser.UserId] = &newUser
+	if ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
+	s.DB.Users[newUser.UserId] = &newUser
 	log.Infof("A new user was added to the DB %v", newUser)
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 }
 
+// Requesting detailed Userdata
 func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 	var newUser User
 	err := json.NewDecoder(r.Body).Decode(&newUser)
 	if err != nil {
-		log.Fatalf("Couldn't decode User: %v", err)
+		log.Errorf("Couldn't decode User: %v", err)
 	}
 
 	requestedUser, ok := s.DB.Users[newUser.UserId]
@@ -59,14 +78,103 @@ func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(requestedUser)
 }
 
-// Report Trash creates a new Trash.
+// ReportTrash is called when a User wants to report a new trash.
+// If there are trashes in vicinity, we send back the closest trashes.
+// Otherwise create a new trash
 func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Heyllo world")
+	if !verifyUser(r) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var reportedTrash Trash
+	err := json.NewDecoder(r.Body).Decode(&reportedTrash)
+	if err != nil {
+		log.Errorf("Couldn't decode trash: %v", reportedTrash)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	log.Infof("Got new Trash: %v", reportedTrash)
+
+	closestTrashes := make([]*Trash, 0)
+	for _, trash := range s.DB.Trash {
+		distanceInMeter := getDistance(trash.Latitude, trash.Longitude, reportedTrash.Latitude, reportedTrash.Longitude)
+		if distanceInMeter < 15 {
+			closestTrashes = append(closestTrashes, trash)
+		}
+	}
+
+	// there are other options, give user opportunity to decide
+	if len(closestTrashes) > 0 {
+		json.NewEncoder(w).Encode(closestTrashes)
+		return
+	}
+
+	userID, err := decodeUserID(r)
+	if err != nil {
+		log.Errorf("Failed to get userID: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	user, existing := s.DB.Users[userID]
+	if !existing {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	user.ReportHistory = append(user.ReportHistory, &reportedTrash)
+	user.Score += reportedTrash.Reward
+	// TODO: user.Rank
+
+	uid, err := uuid.NewUUID()
+	if err != nil {
+		log.Errorf("Failed to generate new uuid: %v", err)
+	}
+	reportedTrash.ID = uid
+	reportedTrash.ReportNumber = 1
+	reportedTrash.Reward = 1
+	s.DB.Trash[uid] = &reportedTrash
+	w.WriteHeader(http.StatusCreated)
+
 }
 
 // Confirms Trash exists. User gets a point for the upvote
-func (s *Server) ConfirmTrash(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello world")
+func (s *Server) UpvoteTrash(w http.ResponseWriter, r *http.Request) {
+	var existingTrash Trash
+	err := json.NewDecoder(r.Body).Decode(&existingTrash)
+	if err != nil {
+		log.Errorf("Couldn't decode trash: %v", existingTrash)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	log.Infof("Got new Trash: %v", existingTrash)
+
+	_, existing := s.DB.Trash[existingTrash.ID]
+	if !existing {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+}
+
+func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
+	var newTrash Trash
+	err := json.NewDecoder(r.Body).Decode(&newTrash)
+	if err != nil {
+		log.Errorf("Couldn't decode trash: %v", newTrash)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	log.Infof("Got new Trash: %v", newTrash)
+
+	uid, err := uuid.NewUUID()
+	if err != nil {
+		log.Errorf("Failed to generate new uuid: %v", err)
+	}
+	newTrash.ID = uid
+	newTrash.ReportNumber = 1
+	newTrash.Reward = 1
+	s.DB.Trash[uid] = &newTrash
+
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (s *Server) PickupTrash(w http.ResponseWriter, r *http.Request) {

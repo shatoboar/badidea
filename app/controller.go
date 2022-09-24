@@ -33,10 +33,30 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Couldn't decode User: %v", err)
 	}
 
+	_, ok := s.DB.Users[newUser.UserId]
+	if !ok {
+		s.DB.Users[newUser.UserId] = &newUser
+	}
+
+	log.Infof("A new user was added to the DB %v", newUser)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Got user")
+	var newUser User
+	err := json.NewDecoder(r.Body).Decode(&newUser)
+	if err != nil {
+		log.Fatalf("Couldn't decode User: %v", err)
+	}
+
+	requestedUser, ok := s.DB.Users[newUser.UserId]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(requestedUser)
 }
 
 // Report Trash creates a new Trash.

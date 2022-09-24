@@ -10,6 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const ReportReward = 1
+
 type DB struct {
 	Users       map[int]*User
 	Trash       map[uuid.UUID]*Trash
@@ -59,6 +61,10 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	log.Infof("A new user was added to the DB %v", newUser)
 	w.WriteHeader(http.StatusCreated)
 }
+
+// TODO:
+// GET requeests, shouldn't send bodies
+//
 
 // Requesting detailed Userdata
 func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +129,7 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.ReportHistory = append(user.ReportHistory, &reportedTrash)
-	user.Score += reportedTrash.Reward
+	user.Score += ReportReward
 	// TODO: user.Rank
 
 	uid, err := uuid.NewUUID()
@@ -179,4 +185,18 @@ func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) PickupTrash(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello world")
+}
+
+func (s *Server) GetTrash(w http.ResponseWriter, r *http.Request) {
+	if !verifyUser(r) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	allTrashes := make([]*Trash, 0)
+	for _, val := range s.DB.Trash {
+		allTrashes = append(allTrashes, val)
+	}
+
+	json.NewEncoder(w).Encode(allTrashes)
 }

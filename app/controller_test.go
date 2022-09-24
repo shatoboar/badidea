@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -30,7 +29,7 @@ var testUser = &User{
 	Rank:          2,
 	JWTToken:      "",
 	FirebaseToken: "",
-	Score:         1,
+	Score:         0,
 }
 
 var testTrash = &Trash{
@@ -40,7 +39,7 @@ var testTrash = &Trash{
 	ImageURL:     "",
 	ReportedBy:   "",
 	ReportNumber: 0,
-	Reward:       0,
+	Reward:       1,
 }
 
 func TestCreateUser(t *testing.T) {
@@ -101,7 +100,11 @@ func TestReportTrash(t *testing.T) {
 		if val.Latitude == val.Longitude {
 			t.Fatalf("Expected %v, got %v", testTrash, val)
 		}
-		fmt.Println(val)
-		fmt.Println(testTrash)
+	}
+
+	for _, val := range s.DB.Users {
+		if val.Score != testTrash.Reward {
+			t.Fatalf("Expected user %s to have %d score, but user has %d", testUser.UserName, testTrash.Reward, val.Score)
+		}
 	}
 }

@@ -183,8 +183,44 @@ func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// func (s *Server) getAllTrash(w http.ResponseWriter, r *http.Request) {
+// 	var trashList [s.DB.Trash]
+// }
+
 func (s *Server) PickupTrash(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello world")
+	var pickedTrash Trash
+	err := json.NewDecoder(r.Body).Decode(&pickedTrash)
+	if err != nil {
+		log.Errorf("Couldn't decode trash: %v", pickedTrash)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	userID, err := decodeUserID(r)
+	if err != nil {
+		log.Errorf("Failed to get userID: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	user, ok := s.DB.Users[userID]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	user.Score += pickedTrash.Reward
+
+	log.Infof("Decoded trash: %v", pickedTrash)
+
+	_, ok = s.DB.Trash[pickedTrash.ID]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	// verify that we can pick up
+
+	delete(s.DB.Trash, pickedTrash.ID)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) GetTrash(w http.ResponseWriter, r *http.Request) {

@@ -17,8 +17,7 @@ type User struct {
 	// For pickups:
 	// The bigger the size, more points
 	// The more items, more points
-	XP   int    `json:"score"`
-	Rank string `json:"rank"`
+	Rank Rank `json:"rank"`
 }
 
 // We differentiate hotposts and Trashes by close Coordinates
@@ -33,4 +32,9 @@ type Trash struct {
 	// Gamification
 	ReportNumber int `json:"report_number"`
 	Reward       int `json:"reward"`
+}
+
+type Rank struct {
+	Score int    `json:"score"`
+	Title string `json:"title"`
 }

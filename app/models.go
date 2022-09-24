@@ -1,11 +1,13 @@
 package app
 
+import "github.com/google/uuid"
+
 type User struct {
-	UserId        string   `json:"user_id"`
-	UserName      string   `json:"user_name"`
-	PickupHistory []*Trash `json:"pickup_history"`
-	ReportHistory []*Trash `json:"report_history"`
-	Rank          int      `json:"rank"`
+	UserId        uuid.UUID `json:"user_id"`
+	UserName      string    `json:"user_name"`
+	PickupHistory []*Trash  `json:"pickup_history"`
+	ReportHistory []*Trash  `json:"report_history"`
+	Rank          int       `json:"rank"`
 
 	// temporary data
 	JWTToken      string `json:"jwt_token"`
@@ -23,13 +25,13 @@ type User struct {
 
 // We differentiate hotposts and Trashes by close Coordinates
 type Trash struct {
-	ID        string  `json:"id"`
-	Latitude  float32 `json:"latitude"`
-	Longitude float32 `json:"longitude"`
-	Image     []byte  `json:"image"`
+	ID        uuid.UUID `json:"id"`
+	Latitude  float64   `json:"latitude"`
+	Longitude float64   `json:"longitude"`
+	ImageURL  []byte    `json:"image_url"`
 
 	// UserId that reported
-	ReportedBy string
+	ReportedBy string `json:"reported_by"`
 	// Gamification
 	ReportNumber int `json:"report_number"`
 	Reward       int `json:"reward"`

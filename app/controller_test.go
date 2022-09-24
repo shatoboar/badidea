@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -22,8 +23,12 @@ func setup(t *testing.T) *Server {
 
 func TestCreateUser(t *testing.T) {
 	s := setup(t)
+	id, err := uuid.NewUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
 	user := &User{
-		UserId:        "test_id",
+		UserId:        id,
 		UserName:      "dannyG",
 		PickupHistory: []*Trash{},
 		ReportHistory: []*Trash{},

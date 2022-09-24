@@ -3,11 +3,12 @@ package app
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -21,32 +22,86 @@ func setup(t *testing.T) *Server {
 	return s
 }
 
+var testUser = &User{
+	UserId:        12345,
+	UserName:      "dannyG",
+	PickupHistory: []*Trash{},
+	ReportHistory: []*Trash{},
+	Rank:          2,
+	JWTToken:      "",
+	FirebaseToken: "",
+	Score:         1,
+}
+
+var testTrash = &Trash{
+	ID:           [16]byte{},
+	Latitude:     52.520008,
+	Longitude:    13.404954,
+	ImageURL:     "",
+	ReportedBy:   "",
+	ReportNumber: 0,
+	Reward:       0,
+}
+
 func TestCreateUser(t *testing.T) {
 	s := setup(t)
-	id, err := uuid.NewUUID()
-	if err != nil {
-		t.Fatal(err)
-	}
-	user := &User{
-		UserId:        id,
-		UserName:      "dannyG",
-		PickupHistory: []*Trash{},
-		ReportHistory: []*Trash{},
-		Rank:          2,
-		JWTToken:      "",
-		FirebaseToken: "",
-		Score:         1,
-	}
-	r := httptest.NewRecorder()
+	recorder := httptest.NewRecorder()
 
-	body, err := json.Marshal(user)
+	body, err := json.Marshal(testUser)
 	if err != nil {
 		t.Fatalf("failed to encode the body: %v", err)
 	}
-	w := httptest.NewRequest(http.MethodGet, "/user", bytes.NewReader(body))
-	s.CreateUser(r, w)
+	req := httptest.NewRequest(http.MethodGet, "/user", bytes.NewReader(body))
+	s.CreateUser(recorder, req)
 
-	if r.Result().StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d, got %d", http.StatusOK, r.Result().StatusCode)
+	if recorder.Result().StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d, got %d", http.StatusOK, recorder.Result().StatusCode)
+	}
+}
+
+func TestNewTrash(t *testing.T) {
+	s := setup(t)
+
+	s.DB.Users[testUser.UserId] = testUser
+
+	recorder := httptest.NewRecorder()
+	body, err := json.Marshal(testTrash)
+	if err != nil {
+		t.Fatalf("Failed to encode the trash: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/trash", bytes.NewReader(body))
+	s.CreateNewTrash(recorder, req)
+
+	gotStatus := recorder.Result().StatusCode
+
+	if gotStatus != http.StatusCreated {
+		t.Fatalf("Expected %d, got %d", http.StatusCreated, gotStatus)
+	}
+}
+
+func TestReportTrash(t *testing.T) {
+	s := setup(t)
+	s.DB.Users[testUser.UserId] = testUser
+
+	recorder := httptest.NewRecorder()
+	body, err := json.Marshal(testTrash)
+	if err != nil {
+		t.Fatalf("Failed to encode the trash: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/trash", bytes.NewReader(body))
+	req.Header.Set("user_id", strconv.Itoa(testUser.UserId))
+	s.ReportTrash(recorder, req)
+
+	got := recorder.Result().StatusCode
+	if got != http.StatusCreated {
+		t.Fatalf("Expected %d as status, got %d", http.StatusCreated, got)
+	}
+
+	for _, val := range s.DB.Trash {
+		if val.Latitude == val.Longitude {
+			t.Fatalf("Expected %v, got %v", testTrash, val)
+		}
+		fmt.Println(val)
+		fmt.Println(testTrash)
 	}
 }

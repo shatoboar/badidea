@@ -41,6 +41,7 @@ func getDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	return d * 1000
 }
 
+// Lookup firebase token to check whether this is valid
 func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var newUser User
 	err := json.NewDecoder(r.Body).Decode(&newUser)
@@ -57,6 +58,7 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// Requesting detailed Userdata
 func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 	var newUser User
 	err := json.NewDecoder(r.Body).Decode(&newUser)
@@ -75,9 +77,14 @@ func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // ReportTrash is called when a User wants to report a new trash.
-// If there are trashes in vicinity, we send back the cloesst trashes.
+// If there are trashes in vicinity, we send back the closest trashes.
 // Otherwise create a new trash
 func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
+	if !verifyUser(r) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	var reportedTrash Trash
 	err := json.NewDecoder(r.Body).Decode(&reportedTrash)
 	if err != nil {
@@ -99,6 +106,23 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(closestTrashes)
 		return
 	}
+
+	userID, err := decodeUserID(r)
+	if err != nil {
+		log.Errorf("Failed to get userID: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	user, existing := s.DB.Users[userID]
+	if !existing {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	user.ReportHistory = append(user.ReportHistory, &reportedTrash)
+	user.Score += reportedTrash.Reward
+	// TODO: user.Rank
 
 	uid, err := uuid.NewUUID()
 	if err != nil {

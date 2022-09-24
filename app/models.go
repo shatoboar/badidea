@@ -28,7 +28,7 @@ type Trash struct {
 	ID        uuid.UUID `json:"id"`
 	Latitude  float64   `json:"latitude"`
 	Longitude float64   `json:"longitude"`
-	ImageURL  []byte    `json:"image_url"`
+	ImageURL  string    `json:"image_url"`
 
 	// UserId that reported
 	ReportedBy string `json:"reported_by"`

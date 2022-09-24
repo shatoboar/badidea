@@ -10,6 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const ReportReward = 1
+
 type DB struct {
 	Users       map[int]*User
 	Trash       map[uuid.UUID]*Trash
@@ -60,15 +62,20 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// TODO:
+// GET requeests, shouldn't send bodies
+//
+
 // Requesting detailed Userdata
 func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
-	var newUser User
-	err := json.NewDecoder(r.Body).Decode(&newUser)
+	userID, err := decodeUserID(r)
 	if err != nil {
-		log.Errorf("Couldn't decode User: %v", err)
+		log.Errorf("Failed to decode userID: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
-	requestedUser, ok := s.DB.Users[newUser.UserId]
+	requestedUser, ok := s.DB.Users[userID]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -123,7 +130,7 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.ReportHistory = append(user.ReportHistory, &reportedTrash)
-	user.Score += reportedTrash.Reward
+	user.Score += ReportReward
 	// TODO: user.Rank
 
 	uid, err := uuid.NewUUID()
@@ -148,12 +155,28 @@ func (s *Server) UpvoteTrash(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Infof("Got new Trash: %v", existingTrash)
 
-	_, existing := s.DB.Trash[existingTrash.ID]
+	trash, existing := s.DB.Trash[existingTrash.ID]
 	if !existing {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
+	userID, err := decodeUserID(r)
+	if err != nil {
+		log.Errorf("Failed to get userID: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	trash.ReportNumber++
+
+	user, ok := s.DB.Users[userID]
+	if !ok {
+		log.Errorf("User doesn't exist: %v", err)
+	}
+	user.ReportHistory = append(user.ReportHistory, trash)
+	user.Score += ReportReward
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
@@ -169,14 +192,77 @@ func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Errorf("Failed to generate new uuid: %v", err)
 	}
+
+	userID, err := decodeUserID(r)
+	if err != nil {
+		log.Errorf("Failed to get userID: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	newTrash.ID = uid
 	newTrash.ReportNumber = 1
 	newTrash.Reward = 1
+	newTrash.ReportedBy = userID
 	s.DB.Trash[uid] = &newTrash
+
+	user, ok := s.DB.Users[userID]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	user.ReportHistory = append(user.ReportHistory, &newTrash)
 
 	w.WriteHeader(http.StatusCreated)
 }
 
 func (s *Server) PickupTrash(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello world")
+	var pickedTrash Trash
+	err := json.NewDecoder(r.Body).Decode(&pickedTrash)
+	if err != nil {
+		log.Errorf("Couldn't decode trash: %v", pickedTrash)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	userID, err := decodeUserID(r)
+	if err != nil {
+		log.Errorf("Failed to get userID: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	user, ok := s.DB.Users[userID]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	user.Score += pickedTrash.Reward
+	user.PickupHistory = append(user.PickupHistory, &pickedTrash)
+
+	log.Infof("Decoded trash: %v", pickedTrash)
+
+	_, ok = s.DB.Trash[pickedTrash.ID]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	// verify that we can pick up
+
+	delete(s.DB.Trash, pickedTrash.ID)
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) GetTrash(w http.ResponseWriter, r *http.Request) {
+	if !verifyUser(r) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	allTrashes := make([]*Trash, 0)
+	for _, val := range s.DB.Trash {
+		allTrashes = append(allTrashes, val)
+	}
+
+	json.NewEncoder(w).Encode(allTrashes)
 }

@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -30,7 +29,7 @@ var testUser = &User{
 	Rank:          2,
 	JWTToken:      "",
 	FirebaseToken: "",
-	Score:         1,
+	Score:         0,
 }
 
 var testTrash = &Trash{
@@ -38,9 +37,9 @@ var testTrash = &Trash{
 	Latitude:     52.520008,
 	Longitude:    13.404954,
 	ImageURL:     "",
-	ReportedBy:   "",
+	ReportedBy:   0,
 	ReportNumber: 0,
-	Reward:       0,
+	Reward:       1,
 }
 
 func TestCreateUser(t *testing.T) {
@@ -70,6 +69,7 @@ func TestNewTrash(t *testing.T) {
 		t.Fatalf("Failed to encode the trash: %v", err)
 	}
 	req := httptest.NewRequest(http.MethodPost, "/trash", bytes.NewReader(body))
+	req.Header.Add("user_id", strconv.Itoa(testUser.UserId))
 	s.CreateNewTrash(recorder, req)
 
 	gotStatus := recorder.Result().StatusCode
@@ -101,7 +101,11 @@ func TestReportTrash(t *testing.T) {
 		if val.Latitude == val.Longitude {
 			t.Fatalf("Expected %v, got %v", testTrash, val)
 		}
-		fmt.Println(val)
-		fmt.Println(testTrash)
+	}
+
+	for _, val := range s.DB.Users {
+		if val.Score != testTrash.Reward {
+			t.Fatalf("Expected user %s to have %d score, but user has %d", testUser.UserName, testTrash.Reward, val.Score)
+		}
 	}
 }

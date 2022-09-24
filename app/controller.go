@@ -11,14 +11,14 @@ import (
 )
 
 type DB struct {
-	Users       map[uuid.UUID]*User
+	Users       map[int]*User
 	Trash       map[uuid.UUID]*Trash
 	LeaderBoard map[uuid.UUID]*User
 }
 
 func NewDB() *DB {
 	return &DB{
-		Users:       make(map[uuid.UUID]*User, 0),
+		Users:       make(map[int]*User, 0),
 		Trash:       make(map[uuid.UUID]*Trash, 0),
 		LeaderBoard: make(map[uuid.UUID]*User, 0),
 	}
@@ -86,11 +86,6 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Infof("Got new Trash: %v", reportedTrash)
 
-	uid, err := uuid.NewUUID()
-	if err != nil {
-		log.Errorf("Failed to generate new uuid: %v", err)
-	}
-
 	closestTrashes := make([]*Trash, 0)
 	for _, trash := range s.DB.Trash {
 		distanceInMeter := getDistance(trash.Latitude, trash.Longitude, reportedTrash.Latitude, reportedTrash.Longitude)
@@ -99,26 +94,61 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// if there are no close trash, then we can add this as a new trash
-	if len(closestTrashes) == 0 {
-		reportedTrash.ID = uid
-		reportedTrash.ReportNumber = 1
-		reportedTrash.Reward = 1
-		s.DB.Trash[uid] = &reportedTrash
-		w.WriteHeader(http.StatusOK)
+	// there are other options, give user opportunity to decide
+	if len(closestTrashes) > 0 {
+		json.NewEncoder(w).Encode(closestTrashes)
 		return
 	}
 
-	json.NewEncoder(w).Encode(closestTrashes)
+	uid, err := uuid.NewUUID()
+	if err != nil {
+		log.Errorf("Failed to generate new uuid: %v", err)
+	}
+	reportedTrash.ID = uid
+	reportedTrash.ReportNumber = 1
+	reportedTrash.Reward = 1
+	s.DB.Trash[uid] = &reportedTrash
+	w.WriteHeader(http.StatusCreated)
+
 }
 
 // Confirms Trash exists. User gets a point for the upvote
 func (s *Server) UpvoteTrash(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello world")
+	var existingTrash Trash
+	err := json.NewDecoder(r.Body).Decode(&existingTrash)
+	if err != nil {
+		log.Errorf("Couldn't decode trash: %v", existingTrash)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	log.Infof("Got new Trash: %v", existingTrash)
+
+	_, existing := s.DB.Trash[existingTrash.ID]
+	if !existing {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 }
 
 func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
+	var newTrash Trash
+	err := json.NewDecoder(r.Body).Decode(&newTrash)
+	if err != nil {
+		log.Errorf("Couldn't decode trash: %v", newTrash)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	log.Infof("Got new Trash: %v", newTrash)
 
+	uid, err := uuid.NewUUID()
+	if err != nil {
+		log.Errorf("Failed to generate new uuid: %v", err)
+	}
+	newTrash.ID = uid
+	newTrash.ReportNumber = 1
+	newTrash.Reward = 1
+	s.DB.Trash[uid] = &newTrash
+
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (s *Server) PickupTrash(w http.ResponseWriter, r *http.Request) {

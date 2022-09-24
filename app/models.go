@@ -3,11 +3,11 @@ package app
 import "github.com/google/uuid"
 
 type User struct {
-	UserId        uuid.UUID `json:"user_id"`
-	UserName      string    `json:"user_name"`
-	PickupHistory []*Trash  `json:"pickup_history"`
-	ReportHistory []*Trash  `json:"report_history"`
-	Rank          int       `json:"rank"`
+	UserId        int      `json:"user_id"`
+	UserName      string   `json:"user_name"`
+	PickupHistory []*Trash `json:"pickup_history"`
+	ReportHistory []*Trash `json:"report_history"`
+	Rank          int      `json:"rank"`
 
 	// temporary data
 	JWTToken      string `json:"jwt_token"`

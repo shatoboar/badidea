@@ -50,12 +50,14 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, ok := s.DB.Users[newUser.UserId]
-	if !ok {
-		s.DB.Users[newUser.UserId] = &newUser
+	if ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
+	s.DB.Users[newUser.UserId] = &newUser
 	log.Infof("A new user was added to the DB %v", newUser)
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 }
 
 // Requesting detailed Userdata

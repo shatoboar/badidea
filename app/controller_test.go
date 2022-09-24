@@ -54,7 +54,7 @@ func TestCreateUser(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/user", bytes.NewReader(body))
 	s.CreateUser(recorder, req)
 
-	if recorder.Result().StatusCode != http.StatusOK {
+	if recorder.Result().StatusCode != http.StatusCreated {
 		t.Fatalf("Expected %d, got %d", http.StatusOK, recorder.Result().StatusCode)
 	}
 }

@@ -200,10 +200,7 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 	closestTrashes := make([]*Trash, 0)
 	for _, trash := range s.DB.Trash {
 		distanceInMeter := getDistance(trash.Latitude, trash.Longitude, reportedTrash.Latitude, reportedTrash.Longitude)
-		log.Infof("The distance in meters is %d", int(distanceInMeter))
-		log.Infof("The distance in meters is %v", distanceInMeter)
 		if int(distanceInMeter) < 15 {
-			log.Infof("The distance in meters is %v", distanceInMeter)
 			closestTrashes = append(closestTrashes, trash)
 		}
 	}
@@ -399,4 +396,10 @@ func (s *Server) createMockTrash() *Trash {
 		Longitude:    13.434719 + float64(rand.Intn(8000)/1000000),
 		ImageURL:     image,
 	}
+}
+
+func (s *Server) GetLeaderBoard(w http.ResponseWriter, r *http.Request) {
+	leaderBoard := getTopUsers(s.DB.Users, 3)
+
+	json.NewEncoder(w).Encode(leaderBoard)
 }

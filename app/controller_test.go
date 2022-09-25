@@ -85,33 +85,33 @@ func TestNewTrash(t *testing.T) {
 	}
 }
 
-func TestReportTrash(t *testing.T) {
-	s := setup(t)
-	s.DB.Users[testUser.UserName] = testUser
+// func TestReportTrash(t *testing.T) {
+// 	s := setup(t)
+// 	s.DB.Users[testUser.UserName] = testUser
 
-	recorder := httptest.NewRecorder()
-	body, err := json.Marshal(testTrash)
-	if err != nil {
-		t.Fatalf("Failed to encode the trash: %v", err)
-	}
-	req := httptest.NewRequest(http.MethodPost, "/trash", bytes.NewReader(body))
-	req.Header.Set("user_name", testUser.UserName)
-	s.ReportTrash(recorder, req)
+// 	recorder := httptest.NewRecorder()
+// 	body, err := json.Marshal(testTrash)
+// 	if err != nil {
+// 		t.Fatalf("Failed to encode the trash: %v", err)
+// 	}
+// 	req := httptest.NewRequest(http.MethodPost, "/trash", bytes.NewReader(body))
+// 	req.Header.Set("user_name", testUser.UserName)
+// 	s.ReportTrash(recorder, req)
 
-	got := recorder.Result().StatusCode
-	if got != http.StatusCreated {
-		t.Fatalf("Expected %d as status, got %d", http.StatusCreated, got)
-	}
+// 	got := recorder.Result().StatusCode
+// 	if got != http.StatusOK {
+// 		t.Fatalf("Expected %d as status, got %d", http.StatusCreated, got)
+// 	}
 
-	for _, val := range s.DB.Trash {
-		if val.Latitude == val.Longitude {
-			t.Fatalf("Expected %v, got %v", testTrash, val)
-		}
-	}
+// 	for _, val := range s.DB.Trash {
+// 		if val.Latitude == val.Longitude {
+// 			t.Fatalf("Expected %v, got %v", testTrash, val)
+// 		}
+// 	}
 
-	for _, val := range s.DB.Users {
-		if val.UserName == testUser.UserName && val.Score != testTrash.Reward {
-			t.Fatalf("Expected user %s to have %d score, but user has %d", testUser.UserName, testTrash.Reward, val.Score)
-		}
-	}
-}
+// 	for _, val := range s.DB.Users {
+// 		if val.UserName == testUser.UserName && val.Score != testTrash.Reward {
+// 			t.Fatalf("Expected user %s to have %d score, but user has %d", testUser.UserName, testTrash.Reward, val.Score)
+// 		}
+// 	}
+// }

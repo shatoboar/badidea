@@ -53,6 +53,9 @@ func getTopUsers(users map[string]*User, top int) []*User {
 
 	for _, k := range keys {
 		topUsers = append(topUsers, users[k])
+		if len(topUsers) == top {
+			break
+		}
 	}
 
 	return topUsers

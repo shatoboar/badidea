@@ -400,6 +400,6 @@ func (s *Server) createMockTrash() Trash {
 
 func (s *Server) GetLeaderBoard(w http.ResponseWriter, r *http.Request) {
 	leaderBoard := getTopUsers(s.DB.Users, 3)
-
+	log.Infof("Leaderboard was requested")
 	json.NewEncoder(w).Encode(leaderBoard)
 }

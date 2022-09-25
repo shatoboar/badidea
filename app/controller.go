@@ -13,17 +13,51 @@ import (
 const ReportReward = 1
 
 type DB struct {
-	Users       map[int]*User
+	Users       map[string]*User
 	Trash       map[uuid.UUID]*Trash
 	LeaderBoard map[uuid.UUID]*User
 }
 
+func initMockUsers() map[string]*User {
+	users := make(map[string]*User, 0)
+	users["gilles"] = &User{
+		UserName:      "gilles",
+		PickupHistory: []*Trash{},
+		ReportHistory: []*Trash{},
+	}
+	users["daniel"] = &User{
+		UserName:      "daniel",
+		PickupHistory: []*Trash{},
+		ReportHistory: []*Trash{},
+	}
+	users["mantas"] = &User{
+		UserName:      "mantas",
+		PickupHistory: []*Trash{},
+		ReportHistory: []*Trash{},
+	}
+	users["filip"] = &User{
+		UserName:      "filip",
+		PickupHistory: []*Trash{},
+		ReportHistory: []*Trash{},
+	}
+	users["karsten"] = &User{
+		UserName:      "karsten",
+		PickupHistory: []*Trash{},
+		ReportHistory: []*Trash{},
+	}
+	return users
+}
+
 func NewDB() *DB {
 	return &DB{
-		Users:       make(map[int]*User, 0),
+		Users:       initMockUsers(),
 		Trash:       make(map[uuid.UUID]*Trash, 0),
 		LeaderBoard: make(map[uuid.UUID]*User, 0),
 	}
+}
+
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
 
 func HelloWorld(w http.ResponseWriter, r *http.Request) {
@@ -45,38 +79,35 @@ func getDistance(lat1, lon1, lat2, lon2 float64) float64 {
 
 // Lookup firebase token to check whether this is valid
 func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	var newUser User
 	err := json.NewDecoder(r.Body).Decode(&newUser)
 	if err != nil {
 		log.Errorf("Couldn't decode User: %v", err)
 	}
 
-	_, ok := s.DB.Users[newUser.UserId]
+	_, ok := s.DB.Users[newUser.UserName]
 	if ok {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	s.DB.Users[newUser.UserId] = &newUser
+	s.DB.Users[newUser.UserName] = &newUser
 	log.Infof("A new user was added to the DB %v", newUser)
 	w.WriteHeader(http.StatusCreated)
 }
 
 // Requesting detailed Userdata
 func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
-	if !s.Auth.verifyUser(r) {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
-	userID, err := decodeUserID(r)
+	enableCors(&w)
+	userName, err := decodeUserName(r)
 	if err != nil {
-		log.Errorf("Failed to decode userID: %v", err)
+		log.Errorf("Failed to decode userName: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	requestedUser, ok := s.DB.Users[userID]
+	requestedUser, ok := s.DB.Users[userName]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -90,11 +121,8 @@ func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 // If there are trashes in vicinity, we send back the closest trashes.
 // Otherwise create a new trash
 func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
-	if !s.Auth.verifyUser(r) {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
 
+	enableCors(&w)
 	var reportedTrash Trash
 	err := json.NewDecoder(r.Body).Decode(&reportedTrash)
 	if err != nil {
@@ -117,14 +145,14 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := decodeUserID(r)
+	userName, err := decodeUserName(r)
 	if err != nil {
-		log.Errorf("Failed to get userID: %v", err)
+		log.Errorf("Failed to get userName: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	user, existing := s.DB.Users[userID]
+	user, existing := s.DB.Users[userName]
 	if !existing {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -148,10 +176,7 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 
 // Confirms Trash exists. User gets a point for the upvote
 func (s *Server) UpvoteTrash(w http.ResponseWriter, r *http.Request) {
-	if !s.Auth.verifyUser(r) {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
+	enableCors(&w)
 	var existingTrash Trash
 	err := json.NewDecoder(r.Body).Decode(&existingTrash)
 	if err != nil {
@@ -166,16 +191,17 @@ func (s *Server) UpvoteTrash(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := decodeUserID(r)
+	userName, err := decodeUserName(r)
 	if err != nil {
-		log.Errorf("Failed to get userID: %v", err)
+		log.Errorf("Failed to get userName: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	trash.ReportNumber++
+	trash.Reward += ReportReward
 
-	user, ok := s.DB.Users[userID]
+	user, ok := s.DB.Users[userName]
 	if !ok {
 		log.Errorf("User doesn't exist: %v", err)
 	}
@@ -185,10 +211,7 @@ func (s *Server) UpvoteTrash(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
-	if !s.Auth.verifyUser(r) {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
+	enableCors(&w)
 	var newTrash Trash
 	err := json.NewDecoder(r.Body).Decode(&newTrash)
 	if err != nil {
@@ -202,9 +225,9 @@ func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("Failed to generate new uuid: %v", err)
 	}
 
-	userID, err := decodeUserID(r)
+	userName, err := decodeUserName(r)
 	if err != nil {
-		log.Errorf("Failed to get userID: %v", err)
+		log.Errorf("Failed to get userName: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -212,10 +235,10 @@ func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
 	newTrash.ID = uid
 	newTrash.ReportNumber = 1
 	newTrash.Reward = 1
-	newTrash.ReportedBy = userID
+	newTrash.ReportedBy = userName
 	s.DB.Trash[uid] = &newTrash
 
-	user, ok := s.DB.Users[userID]
+	user, ok := s.DB.Users[userName]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -226,10 +249,7 @@ func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) PickupTrash(w http.ResponseWriter, r *http.Request) {
-	if !s.Auth.verifyUser(r) {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
+	enableCors(&w)
 	var pickedTrash Trash
 	err := json.NewDecoder(r.Body).Decode(&pickedTrash)
 	if err != nil {
@@ -238,14 +258,14 @@ func (s *Server) PickupTrash(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := decodeUserID(r)
+	userName, err := decodeUserName(r)
 	if err != nil {
-		log.Errorf("Failed to get userID: %v", err)
+		log.Errorf("Failed to get userName: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	user, ok := s.DB.Users[userID]
+	user, ok := s.DB.Users[userName]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -267,10 +287,7 @@ func (s *Server) PickupTrash(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetTrash(w http.ResponseWriter, r *http.Request) {
-	if !s.Auth.verifyUser(r) {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
+	enableCors(&w)
 
 	allTrashes := make([]*Trash, 0)
 	for _, val := range s.DB.Trash {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"firebase.google.com/go/auth"
 )
@@ -23,14 +22,10 @@ func (ac *AuthClient) verifyUser(r *http.Request) bool {
 	return true
 }
 
-func decodeUserID(r *http.Request) (int, error) {
-	user := r.Header.Get("user_id")
+func decodeUserName(r *http.Request) (string, error) {
+	user := r.Header.Get("user_name")
 	if len(user) == 0 {
-		return 0, errors.New("Expected header value, got none.")
+		return "", errors.New("Expected header value, got none.")
 	}
-	userID, err := strconv.Atoi(user)
-	if err != nil {
-		return 0, err
-	}
-	return userID, nil
+	return user, nil
 }

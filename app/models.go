@@ -3,7 +3,7 @@ package app
 import "github.com/google/uuid"
 
 type User struct {
-	UserId        int      `json:"user_id"`
+	UserId        string   `json:"user_id"`
 	UserName      string   `json:"user_name"`
 	PickupHistory []*Trash `json:"pickup_history"`
 	ReportHistory []*Trash `json:"report_history"`
@@ -31,7 +31,7 @@ type Trash struct {
 	ImageURL  string    `json:"image_url"`
 
 	// UserId that reported
-	ReportedBy int `json:"reported_by"`
+	ReportedBy string `json:"reported_by"`
 	// Gamification
 	ReportNumber int `json:"report_number"`
 	Reward       int `json:"reward"`

@@ -9,7 +9,7 @@ import (
 type Server struct {
 	DB     *DB
 	Router *mux.Router
-	Auth   Verifier
+	// Auth   Verifier
 }
 
 type Verifier interface {
@@ -23,6 +23,6 @@ func (s *Server) RegisterRoutes() {
 	s.Router.HandleFunc("/trash", s.GetTrash).Methods("GET")
 	s.Router.HandleFunc("/trash", s.ReportTrash).Methods("POST")
 	s.Router.HandleFunc("/trash/new", s.CreateNewTrash).Methods("POST")
-	s.Router.HandleFunc("/trash", s.UpvoteTrash).Methods("SET")
+	s.Router.HandleFunc("/trash", s.UpvoteTrash).Methods("PUT")
 	s.Router.HandleFunc("/trash", s.PickupTrash).Methods("DELETE")
 }

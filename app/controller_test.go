@@ -5,18 +5,17 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"testing"
 
 	"github.com/gorilla/mux"
 )
 
-type TestVerifier struct {
-}
+// type TestVerifier struct {
+// }
 
-func (tv *TestVerifier) verifyUser(r *http.Request) bool {
-	return true
-}
+// func (tv *TestVerifier) verifyUser(r *http.Request) bool {
+// 	return true
+// }
 
 func setup(t *testing.T) *Server {
 	t.Helper()
@@ -24,14 +23,14 @@ func setup(t *testing.T) *Server {
 	s := &Server{
 		DB:     NewDB(),
 		Router: mux.NewRouter(),
-		Auth:   &TestVerifier{},
+		// Auth:   &TestVerifier{},
 	}
 	s.RegisterRoutes()
 	return s
 }
 
 var testUser = &User{
-	UserId:        12345,
+	UserId:        "",
 	UserName:      "dannyG",
 	PickupHistory: []*Trash{},
 	ReportHistory: []*Trash{},
@@ -44,7 +43,7 @@ var testTrash = &Trash{
 	Latitude:     52.520008,
 	Longitude:    13.404954,
 	ImageURL:     "",
-	ReportedBy:   0,
+	ReportedBy:   "",
 	ReportNumber: 0,
 	Reward:       1,
 }
@@ -68,7 +67,7 @@ func TestCreateUser(t *testing.T) {
 func TestNewTrash(t *testing.T) {
 	s := setup(t)
 
-	s.DB.Users[testUser.UserId] = testUser
+	s.DB.Users[testUser.UserName] = testUser
 
 	recorder := httptest.NewRecorder()
 	body, err := json.Marshal(testTrash)
@@ -76,7 +75,7 @@ func TestNewTrash(t *testing.T) {
 		t.Fatalf("Failed to encode the trash: %v", err)
 	}
 	req := httptest.NewRequest(http.MethodPost, "/trash", bytes.NewReader(body))
-	req.Header.Add("user_id", strconv.Itoa(testUser.UserId))
+	req.Header.Add("user_name", testUser.UserName)
 	s.CreateNewTrash(recorder, req)
 
 	gotStatus := recorder.Result().StatusCode
@@ -88,7 +87,7 @@ func TestNewTrash(t *testing.T) {
 
 func TestReportTrash(t *testing.T) {
 	s := setup(t)
-	s.DB.Users[testUser.UserId] = testUser
+	s.DB.Users[testUser.UserName] = testUser
 
 	recorder := httptest.NewRecorder()
 	body, err := json.Marshal(testTrash)
@@ -96,7 +95,7 @@ func TestReportTrash(t *testing.T) {
 		t.Fatalf("Failed to encode the trash: %v", err)
 	}
 	req := httptest.NewRequest(http.MethodPost, "/trash", bytes.NewReader(body))
-	req.Header.Set("user_id", strconv.Itoa(testUser.UserId))
+	req.Header.Set("user_name", testUser.UserName)
 	s.ReportTrash(recorder, req)
 
 	got := recorder.Result().StatusCode

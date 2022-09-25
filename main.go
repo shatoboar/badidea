@@ -1,12 +1,11 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
+	log "github.com/sirupsen/logrus"
 	"github.com/slash/badidea/app"
 )
 
@@ -18,10 +17,12 @@ func main() {
 	// if err != nil {
 	// 	fmt.Printf("Failed to create a new service account: %v", err)
 	// }
-	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With"})
-	originsOk := handlers.AllowedOrigins([]string{"*"})
-	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 	router := mux.NewRouter()
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},                            // All origins
+		AllowedMethods: []string{"GET", "PUT", "POST", "DELETE"}, // Allowing only get, just an example
+		AllowedHeaders: []string{"*"},                            // Allowing only get, just an example
+	})
 
 	server := &app.Server{
 		DB:     app.NewDB(),
@@ -31,10 +32,10 @@ func main() {
 		// },
 	}
 
-	http.Handle("/", server.Router)
 	server.RegisterRoutes()
-	fmt.Printf("Starting server on port %s...\n", port)
-	log.Fatal(http.ListenAndServe(port, handlers.CORS(headersOk, originsOk, methodsOk)(router)))
+	http.Handle("/", server.Router)
+	log.Infof("Starting server on port %s...\n", port)
+	log.Fatal(http.ListenAndServe(port, c.Handler(router)))
 }
 
 // func initFirebase() *firebase.App {

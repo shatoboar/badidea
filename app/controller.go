@@ -131,7 +131,7 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.ReportHistory = append(user.ReportHistory, &reportedTrash)
-	user.Score += ReportReward
+	updateRank(user, ReportReward)
 	// TODO: user.Rank
 
 	uid, err := uuid.NewUUID()
@@ -180,7 +180,7 @@ func (s *Server) UpvoteTrash(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("User doesn't exist: %v", err)
 	}
 	user.ReportHistory = append(user.ReportHistory, trash)
-	user.Score += ReportReward
+	updateRank(user, ReportReward)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -250,7 +250,7 @@ func (s *Server) PickupTrash(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	user.Score += pickedTrash.Reward
+	updateRank(user, ReportReward)
 	user.PickupHistory = append(user.PickupHistory, &pickedTrash)
 
 	log.Infof("Decoded trash: %v", pickedTrash)

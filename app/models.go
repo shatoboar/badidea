@@ -10,8 +10,8 @@ type User struct {
 	Rank          int      `json:"rank"`
 
 	// temporary data
-	JWTToken      string `json:"jwt_token"`
-	FirebaseToken string `json:"firebase_token"`
+	// JWTToken      string `json:"jwt_token"`
+	// FirebaseToken string `json:"firebase_token"`
 	// Gamification
 
 	// For reports:

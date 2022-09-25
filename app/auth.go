@@ -1,12 +1,25 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
+
+	"firebase.google.com/go/auth"
 )
 
-func verifyUser(r *http.Request) bool {
+type AuthClient struct {
+	Client *auth.Client
+}
+
+func (ac *AuthClient) verifyUser(r *http.Request) bool {
+	token := r.Header.Get("jwt_token")
+	_, err := ac.Client.VerifyIDToken(context.Background(), token)
+	if err != nil {
+		return false
+	}
+
 	return true
 }
 

@@ -187,7 +187,6 @@ func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 // If there are trashes in vicinity, we send back the closest trashes.
 // Otherwise create a new trash
 func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
-
 	enableCors(&w)
 	var reportedTrash Trash
 	err := json.NewDecoder(r.Body).Decode(&reportedTrash)
@@ -311,6 +310,7 @@ func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user.ReportHistory = append(user.ReportHistory, &newTrash)
+	user.Score += ReportReward
 
 	w.WriteHeader(http.StatusCreated)
 }

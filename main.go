@@ -18,11 +18,10 @@ func main() {
 	// if err != nil {
 	// 	fmt.Printf("Failed to create a new service account: %v", err)
 	// }
+	headersOk := handlers.AllowedHeaders([]string{"*"})
+	originsOk := handlers.AllowedOrigins([]string{"*"})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 	router := mux.NewRouter()
-	credentials := handlers.AllowCredentials()
-	methods := handlers.AllowedMethods([]string{"POST", "GET", "PUT", "DELETE"})
-	// ttl := handlers.MaxAge(3600)
-	origins := handlers.AllowedOrigins([]string{"*"})
 
 	server := &app.Server{
 		DB:     app.NewDB(),
@@ -35,7 +34,7 @@ func main() {
 	http.Handle("/", server.Router)
 	server.RegisterRoutes()
 	fmt.Printf("Starting server on port %s...\n", port)
-	log.Fatal(http.ListenAndServe(port, handlers.CORS(credentials, methods, origins)(router)))
+	log.Fatal(http.ListenAndServe(port, handlers.CORS(headersOk, originsOk, methodsOk)(router)))
 }
 
 // func initFirebase() *firebase.App {

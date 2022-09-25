@@ -346,15 +346,11 @@ func (s *Server) PickupTrash(w http.ResponseWriter, r *http.Request) {
 	delete(s.DB.Trash, pickedTrash.ID)
 	if len(s.DB.Trash) < 5 {
 		newTrash := s.createMockTrash()
-		s.DB.Trash[newTrash.ID] = &newTrash
+		s.DB.Trash[newTrash.ID] = newTrash
 
-		newUser, ok := s.DB.Users[newTrash.ReportedBy]
-		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		newUser := s.DB.Users[newTrash.ReportedBy]
 
-		user.ReportHistory = append(newUser.ReportHistory, &newTrash)
+		user.ReportHistory = append(newUser.ReportHistory, newTrash)
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -370,7 +366,7 @@ func (s *Server) GetTrash(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(allTrashes)
 }
 
-func (s *Server) createMockTrash() Trash {
+func (s *Server) createMockTrash() *Trash {
 	names := [5]string{"gilles", "daniel", "mantas", "filip", "karsten"}
 	images := [5]string{"https://www.ra-kotz.de/wp-content/uploads/2018/07/bigstock-183494932.jpg",
 		"https://fotos.verwaltungsportal.de/news/7/4/7/3/3/4/gross/20220701_Sperrmuell.jpg",
@@ -380,20 +376,18 @@ func (s *Server) createMockTrash() Trash {
 	name := names[rand.Intn(5)]
 	image := images[rand.Intn(5)]
 
-	var newTrash Trash
-
 	uid, err := uuid.NewUUID()
 	if err != nil {
 		log.Errorf("Failed to generate new uuid: %v", err)
 	}
 
-	newTrash.ID = uid
-	newTrash.ReportNumber = 1
-	newTrash.Reward = 1
-	newTrash.ReportedBy = s.DB.Users[name].UserId
-	newTrash.Latitude = 52.497116 + float64(rand.Intn(8000)/1000000)
-	newTrash.Longitude = 13.434719 + float64(rand.Intn(8000)/1000000)
-	newTrash.ImageURL = image
-	return newTrash
-
+	return &Trash{
+		ID:           uid,
+		ReportNumber: 1,
+		Reward:       1,
+		ReportedBy:   name,
+		Latitude:     52.497116 + float64(rand.Intn(8000)/1000000),
+		Longitude:    13.434719 + float64(rand.Intn(8000)/1000000),
+		ImageURL:     image,
+	}
 }

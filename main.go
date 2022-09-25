@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/slash/badidea/app"
 )
@@ -17,10 +18,15 @@ func main() {
 	// if err != nil {
 	// 	fmt.Printf("Failed to create a new service account: %v", err)
 	// }
+	router := mux.NewRouter()
+	credentials := handlers.AllowCredentials()
+	methods := handlers.AllowedMethods([]string{"POST", "GET", "PUT", "DELETE"})
+	// ttl := handlers.MaxAge(3600)
+	origins := handlers.AllowedOrigins([]string{"*"})
 
 	server := &app.Server{
 		DB:     app.NewDB(),
-		Router: mux.NewRouter(),
+		Router: router,
 		// Auth: &app.AuthClient{
 		// 	Client: auth,
 		// },
@@ -29,7 +35,7 @@ func main() {
 	http.Handle("/", server.Router)
 	server.RegisterRoutes()
 	fmt.Printf("Starting server on port %s...\n", port)
-	log.Fatal(http.ListenAndServe(port, nil))
+	log.Fatal(http.ListenAndServe(port, handlers.CORS(credentials, methods, origins)(router)))
 }
 
 // func initFirebase() *firebase.App {

@@ -110,7 +110,7 @@ func TestReportTrash(t *testing.T) {
 	}
 
 	for _, val := range s.DB.Users {
-		if val.Score != testTrash.Reward {
+		if val.UserName == testUser.UserName && val.Score != testTrash.Reward {
 			t.Fatalf("Expected user %s to have %d score, but user has %d", testUser.UserName, testTrash.Reward, val.Score)
 		}
 	}

@@ -129,9 +129,7 @@ func getDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	R := 6378.137
 	dLat := lat2*math.Pi/180 - lat1*math.Pi/180
 	dLon := lon2*math.Pi/180 - lon1*math.Pi/180
-	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
-		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*
-			math.Sin(dLon/2)*math.Sin(dLon/2)
+	a := math.Sin(dLat/2)*math.Sin(dLat/2) + math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*math.Sin(dLon/2)*math.Sin(dLon/2)
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 	d := R * c
 
@@ -195,7 +193,10 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 	closestTrashes := make([]*Trash, 0)
 	for _, trash := range s.DB.Trash {
 		distanceInMeter := getDistance(trash.Latitude, trash.Longitude, reportedTrash.Latitude, reportedTrash.Longitude)
-		if distanceInMeter < 15 {
+		log.Infof("The distance in meters is %d", int(distanceInMeter))
+		log.Infof("The distance in meters is %v", distanceInMeter)
+		if int(distanceInMeter) < 15 {
+			log.Infof("The distance in meters is %v", distanceInMeter)
 			closestTrashes = append(closestTrashes, trash)
 		}
 	}
@@ -230,6 +231,7 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 	reportedTrash.ID = uid
 	reportedTrash.ReportNumber = 1
 	reportedTrash.Reward = 1
+	reportedTrash.ReportedBy = user.UserName
 	s.DB.Trash[uid] = &reportedTrash
 	w.WriteHeader(http.StatusCreated)
 

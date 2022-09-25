@@ -279,3 +279,13 @@ func (s *Server) GetTrash(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(allTrashes)
 }
+
+func (s *Server) GetLeaderBoard(w http.ResponseWriter, r *http.Request) {
+	if !s.Auth.verifyUser(r) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	leaderBoard := getTopUsers(s.DB.Users, 10)
+
+	json.NewEncoder(w).Encode(leaderBoard)
+}

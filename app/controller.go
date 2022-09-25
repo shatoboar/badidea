@@ -19,6 +19,67 @@ type DB struct {
 	LeaderBoard map[uuid.UUID]*User
 }
 
+func initMockTrash() map[uuid.UUID]*Trash {
+	trash := make(map[uuid.UUID]*Trash, 0)
+
+	uid, _ := uuid.NewUUID()
+	trash[uid] = &Trash{
+		ID:           uid,
+		Latitude:     52.494121,
+		Longitude:    13.445063,
+		ImageURL:     "https://www.stadtbetrieb-frechen.de/storage/media/images/209/conversions/sperrmuell-slide.jpg",
+		ReportedBy:   "gilles",
+		ReportNumber: 1,
+		Reward:       1,
+	}
+
+	uid, _ = uuid.NewUUID()
+	trash[uid] = &Trash{
+		ID:           uid,
+		Latitude:     52.490249,
+		Longitude:    13.437251,
+		ImageURL:     "https://umziehen.de/media/cache/article_image/cms/2018/12/Sperrmuell-entsorgen-Umziehen-coramueller-iStock.jpg?869457",
+		ReportedBy:   "karsten",
+		ReportNumber: 5,
+		Reward:       5,
+	}
+
+	uid, _ = uuid.NewUUID()
+	trash[uid] = &Trash{
+		ID:           uid,
+		Latitude:     52.497118,
+		Longitude:    13.434719,
+		ImageURL:     "https://www.zvo.com/files/images/3-entsorgung/sperrmuellabholung/sperrmuell-bereitgestellt.jpg",
+		ReportedBy:   "filip",
+		ReportNumber: 3,
+		Reward:       3,
+	}
+
+	uid, _ = uuid.NewUUID()
+	trash[uid] = &Trash{
+		ID:           uid,
+		Latitude:     52.492664,
+		Longitude:    13.461477,
+		ImageURL:     "https://www.ruempelmannschaft.de/wp-content/uploads/2022/06/sperrmuell-abholung-koeln.jpg",
+		ReportedBy:   "mantas",
+		ReportNumber: 1,
+		Reward:       1,
+	}
+
+	uid, _ = uuid.NewUUID()
+	trash[uid] = &Trash{
+		ID:           uid,
+		Latitude:     52.492939,
+		Longitude:    13.452390,
+		ImageURL:     "https://www.avea.info/images/titel/fotolia_110482889_l_sperrmuell_151_md.jpg",
+		ReportedBy:   "daniel",
+		ReportNumber: 8,
+		Reward:       8,
+	}
+	return trash
+
+}
+
 func initMockUsers() map[string]*User {
 	users := make(map[string]*User, 0)
 	users["gilles"] = &User{
@@ -52,13 +113,12 @@ func initMockUsers() map[string]*User {
 func NewDB() *DB {
 	return &DB{
 		Users:       initMockUsers(),
-		Trash:       make(map[uuid.UUID]*Trash, 0),
+		Trash:       initMockTrash(),
 		LeaderBoard: make(map[uuid.UUID]*User, 0),
 	}
 }
 
 func enableCors(w *http.ResponseWriter) {
-	// (*w).Header().Set("Access-Control-Allow-Headers", "Access-Control-Allow-Headers,Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
 }
 
 func HelloWorld(w http.ResponseWriter, r *http.Request) {

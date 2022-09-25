@@ -1,10 +1,19 @@
 package app
 
-import "github.com/gorilla/mux"
+import (
+	"net/http"
+
+	"github.com/gorilla/mux"
+)
 
 type Server struct {
 	DB     *DB
 	Router *mux.Router
+	Auth   Verifier
+}
+
+type Verifier interface {
+	verifyUser(r *http.Request) bool
 }
 
 func (s *Server) RegisterRoutes() {

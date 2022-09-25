@@ -11,11 +11,20 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type TestVerifier struct {
+}
+
+func (tv *TestVerifier) verifyUser(r *http.Request) bool {
+	return true
+}
+
 func setup(t *testing.T) *Server {
 	t.Helper()
+
 	s := &Server{
 		DB:     NewDB(),
 		Router: mux.NewRouter(),
+		Auth:   &TestVerifier{},
 	}
 	s.RegisterRoutes()
 	return s
@@ -27,8 +36,6 @@ var testUser = &User{
 	PickupHistory: []*Trash{},
 	ReportHistory: []*Trash{},
 	Rank:          2,
-	JWTToken:      "",
-	FirebaseToken: "",
 	Score:         0,
 }
 

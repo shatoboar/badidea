@@ -9,8 +9,8 @@ type User struct {
 	ReportHistory []*Trash `json:"report_history"`
 
 	// temporary data
-	JWTToken      string `json:"jwt_token"`
-	FirebaseToken string `json:"firebase_token"`
+	// JWTToken      string `json:"jwt_token"`
+	// FirebaseToken string `json:"firebase_token"`
 	// Gamification
 
 	// For reports:

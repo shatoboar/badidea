@@ -62,12 +62,13 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-// TODO:
-// GET requeests, shouldn't send bodies
-//
-
 // Requesting detailed Userdata
 func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
+	if !s.Auth.verifyUser(r) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	userID, err := decodeUserID(r)
 	if err != nil {
 		log.Errorf("Failed to decode userID: %v", err)
@@ -89,7 +90,7 @@ func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 // If there are trashes in vicinity, we send back the closest trashes.
 // Otherwise create a new trash
 func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
-	if !verifyUser(r) {
+	if !s.Auth.verifyUser(r) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -147,6 +148,10 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 
 // Confirms Trash exists. User gets a point for the upvote
 func (s *Server) UpvoteTrash(w http.ResponseWriter, r *http.Request) {
+	if !s.Auth.verifyUser(r) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	var existingTrash Trash
 	err := json.NewDecoder(r.Body).Decode(&existingTrash)
 	if err != nil {
@@ -180,6 +185,10 @@ func (s *Server) UpvoteTrash(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
+	if !s.Auth.verifyUser(r) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	var newTrash Trash
 	err := json.NewDecoder(r.Body).Decode(&newTrash)
 	if err != nil {
@@ -217,6 +226,10 @@ func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) PickupTrash(w http.ResponseWriter, r *http.Request) {
+	if !s.Auth.verifyUser(r) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	var pickedTrash Trash
 	err := json.NewDecoder(r.Body).Decode(&pickedTrash)
 	if err != nil {
@@ -254,7 +267,7 @@ func (s *Server) PickupTrash(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetTrash(w http.ResponseWriter, r *http.Request) {
-	if !verifyUser(r) {
+	if !s.Auth.verifyUser(r) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

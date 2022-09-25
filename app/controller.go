@@ -399,7 +399,17 @@ func (s *Server) createMockTrash() *Trash {
 }
 
 func (s *Server) GetLeaderBoard(w http.ResponseWriter, r *http.Request) {
-	leaderBoard := getTopUsers(s.DB.Users, 3)
+	leaderBoard := getTopUsers(s.DB.Users, 10)
+	length := len(leaderBoard)
+	leader := 1
+	for i := length - 1; i > 0; i-- {
+		user := s.DB.Users[leaderBoard[i].UserName]
+		s.DB.Users[user.UserName].Rank = leader
+		leader++
+		if i == length-9 {
+			break
+		}
+	}
 
 	json.NewEncoder(w).Encode(leaderBoard)
 }

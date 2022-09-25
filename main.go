@@ -18,7 +18,7 @@ func main() {
 	// if err != nil {
 	// 	fmt.Printf("Failed to create a new service account: %v", err)
 	// }
-	headersOk := handlers.AllowedHeaders([]string{"*"})
+	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With"})
 	originsOk := handlers.AllowedOrigins([]string{"*"})
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 	router := mux.NewRouter()

@@ -208,6 +208,7 @@ func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	updateRank(user, ReportReward)
 
 	newTrash.ID = uid
 	newTrash.ReportNumber = 1

@@ -17,12 +17,12 @@ type Verifier interface {
 }
 
 func (s *Server) RegisterRoutes() {
-	s.Router.HandleFunc("/", HelloWorld).Methods("GET")
-	s.Router.HandleFunc("/user", s.GetUser).Methods("GET")
-	s.Router.HandleFunc("/user", s.CreateUser).Methods("POST")
-	s.Router.HandleFunc("/trash", s.GetTrash).Methods("GET")
-	s.Router.HandleFunc("/trash", s.ReportTrash).Methods("POST")
-	s.Router.HandleFunc("/trash/new", s.CreateNewTrash).Methods("POST")
-	s.Router.HandleFunc("/trash", s.UpvoteTrash).Methods("PUT")
-	s.Router.HandleFunc("/trash", s.PickupTrash).Methods("DELETE")
+	s.Router.HandleFunc("/", HelloWorld).Methods("GET", "OPTIONS")
+	s.Router.HandleFunc("/user", s.GetUser).Methods("GET", "OPTIONS")
+	s.Router.HandleFunc("/user", s.CreateUser).Methods("POST", "OPTIONS")
+	s.Router.HandleFunc("/trash", s.GetTrash).Methods("GET", "OPTIONS")
+	s.Router.HandleFunc("/trash", s.ReportTrash).Methods("POST", "OPTIONS")
+	s.Router.HandleFunc("/trash/new", s.CreateNewTrash).Methods("POST", "OPTIONS")
+	s.Router.HandleFunc("/trash", s.UpvoteTrash).Methods("PUT", "OPTIONS")
+	s.Router.HandleFunc("/trash", s.PickupTrash).Methods("DELETE", "OPTIONS")
 }

@@ -11,7 +11,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const ReportReward = 1
+const (
+	ReportReward = 1
+	BaseReward   = 5
+)
 
 type DB struct {
 	Users       map[string]*User
@@ -30,7 +33,7 @@ func initMockTrash() map[uuid.UUID]*Trash {
 		ImageURL:     "https://www.stadtbetrieb-frechen.de/storage/media/images/209/conversions/sperrmuell-slide.jpg",
 		ReportedBy:   "gilles",
 		ReportNumber: 1,
-		Reward:       1,
+		Reward:       4,
 	}
 
 	uid, _ = uuid.NewUUID()
@@ -41,7 +44,7 @@ func initMockTrash() map[uuid.UUID]*Trash {
 		ImageURL:     "https://umziehen.de/media/cache/article_image/cms/2018/12/Sperrmuell-entsorgen-Umziehen-coramueller-iStock.jpg?869457",
 		ReportedBy:   "karsten",
 		ReportNumber: 5,
-		Reward:       5,
+		Reward:       10,
 	}
 
 	uid, _ = uuid.NewUUID()
@@ -52,7 +55,7 @@ func initMockTrash() map[uuid.UUID]*Trash {
 		ImageURL:     "https://www.zvo.com/files/images/3-entsorgung/sperrmuellabholung/sperrmuell-bereitgestellt.jpg",
 		ReportedBy:   "filip",
 		ReportNumber: 3,
-		Reward:       3,
+		Reward:       7,
 	}
 
 	uid, _ = uuid.NewUUID()
@@ -63,7 +66,7 @@ func initMockTrash() map[uuid.UUID]*Trash {
 		ImageURL:     "https://www.ruempelmannschaft.de/wp-content/uploads/2022/06/sperrmuell-abholung-koeln.jpg",
 		ReportedBy:   "mantas",
 		ReportNumber: 1,
-		Reward:       1,
+		Reward:       10,
 	}
 
 	uid, _ = uuid.NewUUID()
@@ -74,7 +77,7 @@ func initMockTrash() map[uuid.UUID]*Trash {
 		ImageURL:     "https://www.avea.info/images/titel/fotolia_110482889_l_sperrmuell_151_md.jpg",
 		ReportedBy:   "daniel",
 		ReportNumber: 8,
-		Reward:       8,
+		Reward:       10,
 	}
 	return trash
 
@@ -125,15 +128,19 @@ func HelloWorld(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello world")
 }
 
+func degreesToRadians(degrees float64) float64 {
+	return degrees * math.Pi / 180
+}
+
 func getDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	R := 6378.137
-	dLat := lat2*math.Pi/180 - lat1*math.Pi/180
-	dLon := lon2*math.Pi/180 - lon1*math.Pi/180
+	dLat := degreesToRadians(lat2 - lat1)
+	dLon := degreesToRadians(lon2 - lon1)
 	a := math.Sin(dLat/2)*math.Sin(dLat/2) + math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*math.Sin(dLon/2)*math.Sin(dLon/2)
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 	d := R * c
 
-	return d * 1000
+	return d
 }
 
 // Lookup firebase token to check whether this is valid
@@ -150,8 +157,8 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	newUser.Title = "Rookie Hunter"
-	s.DB.Users[newUser.UserId] = &newUser
+
+	s.DB.Users[newUser.UserName] = &newUser
 	log.Infof("A new user was added to the DB %v", newUser)
 	w.WriteHeader(http.StatusCreated)
 }
@@ -221,7 +228,7 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.ReportHistory = append(user.ReportHistory, &reportedTrash)
-	updateRank(user, ReportReward)
+	user.Score += ReportReward
 	// TODO: user.Rank
 
 	uid, err := uuid.NewUUID()
@@ -230,7 +237,7 @@ func (s *Server) ReportTrash(w http.ResponseWriter, r *http.Request) {
 	}
 	reportedTrash.ID = uid
 	reportedTrash.ReportNumber = 1
-	reportedTrash.Reward = 1
+	reportedTrash.Reward = 5
 	reportedTrash.ReportedBy = user.UserName
 	s.DB.Trash[uid] = &reportedTrash
 	w.WriteHeader(http.StatusCreated)
@@ -262,14 +269,14 @@ func (s *Server) UpvoteTrash(w http.ResponseWriter, r *http.Request) {
 	}
 
 	trash.ReportNumber++
-	trash.Reward += ReportReward
+	trash.Reward += ReportReward + BaseReward
 
 	user, ok := s.DB.Users[userName]
 	if !ok {
 		log.Errorf("User doesn't exist: %v", err)
 	}
 	user.ReportHistory = append(user.ReportHistory, trash)
-	updateRank(user, ReportReward)
+	user.Score += ReportReward
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -297,7 +304,7 @@ func (s *Server) CreateNewTrash(w http.ResponseWriter, r *http.Request) {
 
 	newTrash.ID = uid
 	newTrash.ReportNumber = 1
-	newTrash.Reward = 1
+	newTrash.Reward = BaseReward
 	newTrash.ReportedBy = userName
 	s.DB.Trash[uid] = &newTrash
 
@@ -333,7 +340,7 @@ func (s *Server) PickupTrash(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	updateRank(user, ReportReward)
+	user.Score += pickedTrash.Reward
 	user.PickupHistory = append(user.PickupHistory, &pickedTrash)
 
 	log.Infof("Decoded trash: %v", pickedTrash)
@@ -386,16 +393,10 @@ func (s *Server) createMockTrash() *Trash {
 	return &Trash{
 		ID:           uid,
 		ReportNumber: 1,
-		Reward:       1,
+		Reward:       BaseReward,
 		ReportedBy:   name,
 		Latitude:     52.497116 + float64(rand.Intn(8000)/1000000),
 		Longitude:    13.434719 + float64(rand.Intn(8000)/1000000),
 		ImageURL:     image,
 	}
-}
-
-func (s *Server) GetLeaderBoard(w http.ResponseWriter, r *http.Request) {
-	leaderBoard := getTopUsers(s.DB.Users, 3)
-
-	json.NewEncoder(w).Encode(leaderBoard)
 }
